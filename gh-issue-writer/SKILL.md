@@ -1,91 +1,97 @@
 ---
 name: gh-issue-writer
 description: >
-  Write high-quality GitHub issues from vague symptoms or short descriptions, especially for
-  multi-repo/multi-stack apps. Use when the user wants to file a bug report, feature request,
-  or engineering ticket — even with only 1-2 sentences of context. Triggers include "create an
-  issue", "file a bug", "write a ticket", "open an issue in [repo]", or any request to document
-  a problem or feature in GitHub.
+  Write and file GitHub issues for the Chance AI app. Use when the user wants to report a bug,
+  request a feature, or document a problem — even from just 1-2 sentences of context. Triggers
+  include "create an issue", "file a bug", "write a ticket", or any request to open a GitHub issue.
 ---
 
 # gh-issue-writer
 
-Turn vague symptoms into actionable, well-researched GitHub issues.
+File clear, well-scoped GitHub issues from vague symptoms. The goal is to give the dev enough
+context to *find* the problem — not to solve it for them.
 
-> **Internal skill for Chance AI** — a cross-platform iOS-first app with a 3-layer stack:
+> **Internal skill for Chance AI** — 3-layer stack:
 > Flutter (`App-by-FlutterFlow`) → Node.js (`chance-app-backend-nodejs`) → Python AI (`dubao-va`)
-> See `references/multi-stack.md` for full architecture, repo backgrounds, and communication flow.
+> See `references/stack.md` for repo backgrounds and ownership map.
 
-## Core Principle
+## What a good issue does
 
-**Research before writing.** Clone the relevant repo(s) and trace the code before drafting anything. Ten minutes of reading beats hours of dev back-and-forth.
+- Describes the **symptom** clearly from the user's perspective
+- Captures **when / how to reproduce** it (steps, conditions, frequency)
+- States **expected vs actual** behavior
+- Points the dev at the **right repo** — nothing more
+
+What a good issue does NOT do:
+- Guess at root cause
+- Suggest specific file fixes
+- Tell the dev how to implement the solution
+
+That's the dev's job. Wrong guesses waste their time.
 
 ## Workflow
 
-### 1. Extract the signal
+### 1. Clarify the symptom (if needed)
 
-From the user's description, identify:
-- The **symptom** (what the user experiences)
-- The **trigger** (what action causes it)
-- The **affected repo(s)** — ask if unclear
+If the description is too vague to write a useful issue, ask **one focused question**:
 
-### 2. Research the code
+| Vague | Ask |
+|---|---|
+| "it's slow" | Which screen / action feels slow? |
+| "it crashes" | What were you doing right before? Does it always happen? |
+| "it looks wrong" | What did you expect to see? |
+| "it doesn't work" | What happened instead — error, nothing, wrong result? |
 
-```bash
-git clone --depth=1 https://github.com/ORG/REPO /tmp/repo-name
+Don't ask multiple questions at once.
+
+### 2. Identify the right repo
+
+Use `references/stack.md` ownership table. When in doubt:
+- UI / app behavior → Flutter
+- API / data / backend logic → Node.js
+- AI inference / agent behavior → dubao-va
+- Unsure → file in the most likely one, note uncertainty in the issue
+
+No need to clone or read code to pick the repo.
+
+### 3. Write the issue
+
+Keep it tight. Use this structure:
+
+```
+## Symptom
+[What the user experiences. 1-3 sentences, plain language.]
+
+## How to reproduce
+[Steps or conditions. If unknown, say "Reproduction steps unclear — needs investigation."]
+
+## Expected behavior
+[What should happen.]
+
+## Actual behavior
+[What happens instead.]
+
+## Context
+[App version, device, frequency, any other relevant info the user mentioned.]
 ```
 
-Then trace the call chain relevant to the symptom:
-- Find the UI entry point (widget, screen, button)
-- Follow through to the API call
-- Find the backend controller/handler
-- Check DB writes, SSE events, lifecycle hooks
-- For multi-stack apps, trace all the way through (e.g. Flutter → Node → Python → LLM)
+Drop any section the user has no info for. Don't fill in blanks with guesses.
 
-Use targeted searches:
-```bash
-grep -rn "keyword" /tmp/repo-name/lib --include="*.dart" | head -30
-find /tmp/repo-name -name "*.ts" | xargs grep -l "relevant_function"
-```
-
-### 3. Identify the layer that owns the root cause
-
-See `references/multi-stack.md` for how to assign issues across repos.
-
-### 4. Draft the issue
-
-Use the template in `references/issue-template.md`. Adapt depth to complexity:
-- Simple bug → Symptom + root cause + one-file fix
-- Logic/state bug → Full code path + reproduction conditions
-- Cross-layer bug → Root cause per layer + contract definition + cross-links
-
-### 5. Create the issue
+### 4. File it
 
 ```bash
 gh issue create \
-  --repo ORG/REPO \
-  --title "Short, action-oriented title" \
-  --body "$(cat /tmp/issue-body.md)" \
+  --repo Chance-Inc/REPO \
+  --title "Short verb-led title describing the symptom" \
+  --body "..." \
   --label "bug"
 ```
 
-For cross-repo issues: create backend issue first (it defines the contract), then Flutter/client issue referencing it.
-
-Always cross-link related issues across repos.
-
-## Issue Quality Checklist
-
-Before filing, verify:
+For issues that clearly span two repos, file in both and cross-link:
 ```
-☐ Root cause identified with file + line reference
-☐ Expected vs actual behavior clearly stated
-☐ Fix is concrete enough to start coding without questions
-☐ Cross-repo dependencies linked
-☐ Contract between layers explicitly defined (if applicable)
-☐ Each issue is independently closeable
+Related: Chance-Inc/other-repo#N
 ```
 
 ## References
 
-- `references/issue-template.md` — Issue body template with section guidance
-- `references/multi-stack.md` — How to scope and split issues across multiple repos/services
+- `references/stack.md` — Repo ownership, what each layer owns, when to file where
