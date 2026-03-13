@@ -8,32 +8,32 @@ description: >
 
 # gh-issue-writer
 
-File clear, well-scoped GitHub issues from vague symptoms. The goal is to give the dev enough
-context to *find* the problem — not to solve it for them.
+File clear, well-scoped GitHub issues from vague symptoms. The goal: give the dev enough context
+to find and investigate the problem quickly — symptom, reproduction, and code pointers.
 
 > **Internal skill for Chance AI** — 3-layer stack:
 > Flutter (`App-by-FlutterFlow`) → Node.js (`chance-app-backend-nodejs`) → Python AI (`dubao-va`)
-> See `references/stack.md` for repo backgrounds and ownership map.
+> See `references/stack.md` for repo backgrounds, key files, and ownership map.
 
-## What a good issue does
+## What a good issue includes
 
-- Describes the **symptom** clearly from the user's perspective
-- Captures **when / how to reproduce** it (steps, conditions, frequency)
-- States **expected vs actual** behavior
-- Points the dev at the **right repo** — nothing more
+- **Symptom** — what the user experiences, in plain language
+- **Reproduction** — when/how it happens, conditions, frequency
+- **Expected vs actual** behavior
+- **Code pointers** — relevant module, API endpoint, screen name, or file; enough for the dev to know where to start looking
 
 What a good issue does NOT do:
-- Guess at root cause
-- Suggest specific file fixes
-- Tell the dev how to implement the solution
+- Assert the root cause
+- Prescribe the fix
+- Suggest specific implementation changes
 
-That's the dev's job. Wrong guesses waste their time.
+Code pointers are hints, not conclusions. Frame them as *"probably relevant"*, not *"the bug is here"*.
 
 ## Workflow
 
 ### 1. Clarify the symptom (if needed)
 
-If the description is too vague to write a useful issue, ask **one focused question**:
+If the description is too vague, ask **one focused question**:
 
 | Vague | Ask |
 |---|---|
@@ -42,28 +42,34 @@ If the description is too vague to write a useful issue, ask **one focused quest
 | "it looks wrong" | What did you expect to see? |
 | "it doesn't work" | What happened instead — error, nothing, wrong result? |
 
-Don't ask multiple questions at once.
+### 2. Identify the right repo(s)
 
-### 2. Identify the right repo
+Use `references/stack.md` ownership table. For cross-layer symptoms, file in both repos and cross-link.
 
-Use `references/stack.md` ownership table. When in doubt:
-- UI / app behavior → Flutter
-- API / data / backend logic → Node.js
-- AI inference / agent behavior → dubao-va
-- Unsure → file in the most likely one, note uncertainty in the issue
+### 3. Do a lightweight code scan
 
-No need to clone or read code to pick the repo.
+Clone shallow and grep for keywords related to the symptom. The goal is **pointers, not analysis**:
 
-### 3. Write the issue
+```bash
+git clone --depth=1 https://github.com/Chance-Inc/REPO /tmp/repo-name
+```
 
-Keep it tight. Use this structure:
+Look for:
+- The screen/widget/controller that handles the relevant user action
+- The API endpoint being called (method + path)
+- The relevant service, model, or module name
+- Any obviously related file names
+
+**Stop when you have 2–4 pointers.** Don't trace the full call chain. Don't form conclusions.
+
+### 4. Write the issue
 
 ```
 ## Symptom
 [What the user experiences. 1-3 sentences, plain language.]
 
 ## How to reproduce
-[Steps or conditions. If unknown, say "Reproduction steps unclear — needs investigation."]
+[Steps or conditions. If unknown: "Reproduction steps unclear — needs investigation."]
 
 ## Expected behavior
 [What should happen.]
@@ -71,13 +77,17 @@ Keep it tight. Use this structure:
 ## Actual behavior
 [What happens instead.]
 
+## Potentially relevant code
+[2–4 pointers: file paths, API endpoints, module/class names. 
+ Frame as hints: "This flow likely goes through X" or "The relevant API is Y".]
+
 ## Context
-[App version, device, frequency, any other relevant info the user mentioned.]
+[Device, frequency, any other info the user mentioned.]
 ```
 
-Drop any section the user has no info for. Don't fill in blanks with guesses.
+Drop any section you have no real info for. Don't fill blanks with guesses.
 
-### 4. File it
+### 5. File it
 
 ```bash
 gh issue create \
@@ -87,11 +97,8 @@ gh issue create \
   --label "bug"
 ```
 
-For issues that clearly span two repos, file in both and cross-link:
-```
-Related: Chance-Inc/other-repo#N
-```
+For cross-repo issues, create backend issue first (it owns the contract), then client issue referencing it.
 
 ## References
 
-- `references/stack.md` — Repo ownership, what each layer owns, when to file where
+- `references/stack.md` — Repo ownership, key files per layer, when to file where
